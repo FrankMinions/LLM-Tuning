@@ -10,11 +10,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model_checkpoint", type=str, help="checkpoint, like `THUDM/chatglm-6b`")
 parser.add_argument("--input_file", type=str, help="Instruction 数据文件地址，文件中每一行都是json格式，包含一个输出和一个输出")
 parser.add_argument("--instruct_key", type=str, default="instruction", help="你的jsonl文件里，prompt的指令字段是什么")
-parser.add_argument("--prompt_key", type=str, default="input", help="你的jsonl文件里，prompt的输入字段是什么")
+parser.add_argument("--prompt_key", type=str, default=None, help="你的jsonl文件里，prompt的输入字段是什么")
 parser.add_argument("--target_key", type=str, default="output", help="你的jsonl文件里，prompt的输出字段是什么")
 parser.add_argument("--save_name", type=str, default=f"temp", help="经过tokenize之后的数据集的存放位置")
 parser.add_argument("--template_name", type=str, default="alpaca", help="The name of prompt template.")
-parser.add_argument("--max_seq_length", type=int, default=2040)
+parser.add_argument("--max_seq_length", type=int, default=2048)
 parser.add_argument("--skip_overlength", type=bool, default=False)
 args = parser.parse_args()
 model_checkpoint = args.model_checkpoint
@@ -59,9 +59,12 @@ class Prompter(object):
 
 def preprocess(tokenizer, prompter, config, example, max_seq_length, instruct_key, prompt_key, target_key):
     instruct = example[instruct_key]
-    prompt = example[prompt_key]
     target = example[target_key]
-    instruction = prompter.generate_prompt(instruct, prompt)
+    if prompt_key:
+        prompt = example[prompt_key]
+        instruction = prompter.generate_prompt(instruct, prompt)
+    else:
+        instruction = prompter.generate_prompt(instruct)
     prompt_ids = tokenizer.encode(instruction, max_length=max_seq_length, truncation=True)
     target_ids = tokenizer.encode(target, max_length=max_seq_length, truncation=True, add_special_tokens=False)
     # 最终还是将instruction的输入输出都拼在一起，使用经典的causal-LM的next word prediction方式来训练
