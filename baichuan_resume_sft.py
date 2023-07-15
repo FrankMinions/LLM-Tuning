@@ -14,14 +14,15 @@ import datasets
 import os
 from pprint import pprint as print
 
-model_checkpoint = "baichuan-inc/baichuan-7B"
-tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, trust_remote_code=True)
+model_name_or_path = "baichuan-inc/baichuan-7B"
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=True)
 
 
 @dataclass
 class FinetuningArguments:
-    tokenized_dataset: str = field(default=" ")  # tokenized之后的数据集文件夹
-    model_path: str = field(default=" ")
+    tokenized_dataset: str = field(
+        metadata={"help": "Dataset after tokenized."}
+    )
     lora_rank: int = field(default=8)
     lora_alpha: int = field(default=32)
     finetuning_type: str = field(default="lora")
@@ -31,8 +32,8 @@ class FinetuningArguments:
 
 @dataclass
 class ModelArguments:
-    checkpoint_dir: str = field(default=" ")
-    resume_lora_training: bool = field(default=True)
+    checkpoint_dir: str = field(default=None)   # Need to specify if you want to resume checkpoints.
+    resume_lora_training: bool = field(default=False)   # Need to specify 'True' if you want to resume checkpoints.
 
     def __post_init__(self):
         if self.checkpoint_dir is not None:  # support merging multiple lora weights
@@ -185,7 +186,7 @@ def main():
 
     # init model
     model = AutoModelForCausalLM.from_pretrained(
-        model_checkpoint, load_in_8bit=False, trust_remote_code=True, device_map="auto"
+        model_name_or_path, load_in_8bit=False, trust_remote_code=True, device_map="auto"
     )
     print(model.hf_device_map)
 
@@ -194,6 +195,7 @@ def main():
     model.lm_head = CastOutputToFloat(model.lm_head)
 
     # setup peft
+    # Default not to merge with the original model
     model = _init_adapter(model, model_args, finetune_args, is_trainable=True, is_mergeable=False)
     print_trainable_params(model)
 
