@@ -1,6 +1,7 @@
  CUDA_VISIBLE_DEVICES=0,1,2,3 python baichuan_resume_sft.py \
      --tokenized_dataset sentiment_comp_ie_shuffled_baichuan-7B \
      --lora_rank 8 \
+     --lora_target W_pack \
      --per_device_train_batch_size 4 \
      --gradient_accumulation_steps 1 \
      --num_train_epochs 3.0 \
