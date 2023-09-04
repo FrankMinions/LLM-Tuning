@@ -189,6 +189,8 @@ def main():
     model = AutoModelForCausalLM.from_pretrained(
         model_name_or_path, load_in_8bit=False, trust_remote_code=True, device_map="auto"
     )
+    
+    # print the device where each layer of the sharded model is located
     print(model.hf_device_map)
 
     model.gradient_checkpointing_enable()
