@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 import datasets
 import os
 from pprint import pprint as print
+from typing import Union, List
 
 model_name_or_path = "baichuan-inc/baichuan-7B"
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=True)
@@ -27,7 +28,7 @@ class FinetuningArguments:
     lora_alpha: int = field(default=32)
     finetuning_type: str = field(default="lora")
     lora_dropout: float = field(default=0.1)
-    lora_target: str = field(default="W_pack")
+    lora_target: Union[List[str], str] = field(default=None)
 
 
 @dataclass
