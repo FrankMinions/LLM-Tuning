@@ -67,9 +67,9 @@ def preprocess(tokenizer, prompter, config, example, max_seq_length, instruct_ke
         instruction = prompter.generate_prompt(instruct)
     prompt_ids = tokenizer.encode(instruction, max_length=max_seq_length, truncation=True)
     target_ids = tokenizer.encode(target, max_length=max_seq_length, truncation=True, add_special_tokens=False)
-    # 最终还是将instruction的输入输出都拼在一起，使用经典的causal-LM的next word prediction方式来训练
+
     input_ids = prompt_ids + target_ids + [config.eos_token_id]
-    return {"input_ids": input_ids, "seq_len": len(prompt_ids)}
+    return {"input_ids": input_ids, "labels": [-100]*len(prompt_ids)+target_ids+[config.eos_token_id], "attention_mask": [1]*len(input_ids)}
 
 
 def read_jsonl(path, max_seq_length, instruct_key, prompt_key, target_key, skip_overlength=False):
@@ -84,7 +84,15 @@ def read_jsonl(path, max_seq_length, instruct_key, prompt_key, target_key, skip_
             feature = preprocess(tokenizer, prompter, config, example, max_seq_length, instruct_key, prompt_key, target_key)
             if skip_overlength and len(feature["input_ids"]) > max_seq_length:
                 continue
+            feature["input_ids"] += [tokenizer.pad_token_id] * (max_seq_length - len(feature["input_ids"]))
+            feature["labels"] += [-100] * (max_seq_length - len(feature["labels"]))
+            feature["attention_mask"] += [0] * (max_seq_length - len(feature["attention_mask"]))
+
+            assert len(feature["input_ids"]) == len(feature["labels"])
+
             feature["input_ids"] = feature["input_ids"][:max_seq_length]
+            feature["labels"] = feature["labels"][:max_seq_length]
+            feature["attention_mask"] = feature["attention_mask"][:max_seq_length]
             yield feature
 
 
